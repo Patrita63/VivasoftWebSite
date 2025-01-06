@@ -1,0 +1,72 @@
+.HomeToolbar {
+    background-color: #005f6a;  /* Verde Petrolio */
+}
+
+.Home {
+    /* background-color: #81D8D0; Tiffany #81d8d0 */
+    /*  background-color: #6bbbae; */
+    margin-top: 0px;
+    background-color: #81d8d0;
+    text-align: center;
+    color: #005f6a;
+}
+
+.wrapperbody {
+    background-color: #81d8d0;
+    height: 100vh;
+    width: 100vw;
+    text-align: center;
+    color: #005f6a;
+}
+
+.MarginLeftAuto {
+    margin-left: auto;
+}
+
+.MarginRightAuto {
+    margin-right: auto;
+}
+
+.MarginTop {
+    margin-top: 10px;
+}
+
+.BtnLoadUsers {
+    background-color: blue;
+    color: whitesmoke;
+}
+
+.tableCalendar {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+}
+  
+.td, .th {
+border: 1px solid #dddddd;
+text-align: left;
+padding: 8px;
+}
+
+.tdRed, .thRed {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+    background-color: rgb(211, 80, 80);
+}
+  
+.tr:nth-child(even) {
+background-color: #dddddd;
+}
+
+.CalendarBackgroud{
+    border: 3px solid #dddddd;
+    background-color: white;
+}
+
+.today {
+    background-color: yellow; /* Highlight today */
+    font-weight: bold;
+    border: 2px solid orange;
+}
+
