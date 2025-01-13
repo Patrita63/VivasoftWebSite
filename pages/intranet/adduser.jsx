@@ -5,8 +5,7 @@ import { useRouter } from 'next/router';
 // Validation - npm install react-hook-form
 import { useForm, Controller } from 'react-hook-form';
 
-import loadDatabase from '../../lib/databasesqlite';
-const localforage = require("localforage");
+import getConnection from '../../lib/dbsqlazure';
 
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -55,45 +54,23 @@ const AddUser = () => {
     }); 
 
     useEffect(() => {
-        const initializeDatabase = async () => {
-            
+        const getAllUsers = async () => {
             try {
-                setIsDataReady(false);
-                const databasePath = process.env.NEXT_PUBLIC_DATABASE_SQLITE; // || "/default_database.sqlite";
-                console.log('adduser.js - databasePath: ' + databasePath);
-                const database = await loadDatabase(databasePath);
-                setDb(database);
-                console.log('database: ' + database);
-                // debugger;
-
-                if(database){
-                    const query = 'SELECT Id, TipoUtente, Descrizione FROM T_TipoUtente';
-                    console.log('query: ' + query);
-                    const result = database.exec(query);
-                    // debugger;
-                    const rows = result[0]?.values || [];
-
-                    const transformedArray = rows.map(item => ({
-                        value: item[0],
-                        TipoUtente: item[1]
-                    }));
-                      
-                    console.log(transformedArray);
-
-                    setListTipoUtente(transformedArray);
-                    
-                    setIsDataReady(true);
-                    setLoading(false); // Data is loaded
-                }
-
-            } catch (err) {
-                setIsDataReady(false);
-                setError(err.message);
-                console.log('AddUser - useEffect error: ' + err.message);
+                const query = 'SELECT Id, TipoUtente, Descrizione FROM T_TipoUtente';
+                console.log('getAllUsers - query: ' + query);
+                debugger;
+                const pool = await getConnection();
+                const result = await pool.request().query(query);
+        
+                res.status(200).json(result.recordset);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                res.status(500).json({ error: 'Internal Server Error' });
             }
-        };
+        
+        }
 
-        initializeDatabase();
+        getAllUsers();
 
     }, [setValue]);
 
@@ -123,18 +100,18 @@ const AddUser = () => {
     const AddUserData = async (user) => {
         console.log('AddUserData dataUser:', user);
 
-        if (!db) {
-            console.error('Database is not initialized');
-            return;
-        }
-
+        
         try {
             
             // Check if the user exists before addition
-            const checkUser = db.exec(`SELECT * FROM T_Utente WHERE Email = '${user.email}'`);
-            console.log('AddUserData - ' + `SELECT * FROM T_Utente WHERE Email = '${user.email}'`);
+            const query = `SELECT * FROM T_Utente WHERE Email = '${user.email}'`;
+            console.log('AddUserData - check query: ' + query);
+            // const pool = await getConnection();
+            const result = await pool.request().query(query);
+        
+            res.status(200).json(result.recordset);
     
-            if (!checkUser || checkUser.length === 0) {
+            if (result.recordset.length === 0) {
                 // Add the user
                 const query = `
                     INSERT INTO [T_Utente]
@@ -151,15 +128,11 @@ const AddUser = () => {
                         ,'${user.phone}'
                         ,'${user.datadinascita}'
                         ,${user.tipoutente.value})`;
-                db.run(query);
+                // const pool = await getConnection();
+                const result = await pool.request().query(query);
+            
+                res.status(200).json(result.recordset);
                 console.log("User added successfully.");
-        
-                // ✅ Save the updated database back to IndexedDB
-                const updatedDb = db.export();
-                const databasePath = process.env.NEXT_PUBLIC_DATABASE_SQLITE; // || "/default_database.sqlite";
-                console.log('AddUserData - databasePath: ' + databasePath);
-                await localforage.setItem(databasePath, updatedDb);
-                console.log("Database saved to IndexedDB after addition.");
         
                 // Redirect to AllUsers page
                 router.push("/intranet/allusers");

@@ -19,8 +19,7 @@ import { LockOutlined } from "@mui/icons-material";
 // next link
 import Link from 'next/link';
 
-import loadDatabase from '../../../lib/databasesqlite';
-const localforage = require("localforage");
+import getConnection from '../../../lib/dbsqlazure';
 
 const Login = () => {
 
@@ -32,26 +31,6 @@ const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-    useEffect(() => {
-      const initializeDatabase = async () => {
-          
-          try {
-              const databasePath = process.env.NEXT_PUBLIC_DATABASE_SQLITE; // || "/default_database.sqlite";
-              console.log('Login - databasePath: ' + databasePath);
-              const database = await loadDatabase(databasePath);
-              setDb(database);
-              console.log('database: ' + database);
-              // debugger;
-          } catch (err) {
-              setError(err.message);
-              console.log('Login - useEffect error: ' + err.message);
-          }
-      };
-
-      initializeDatabase();
-
-    }, []);
 
     const handleCancel = () => {
       // Redirect to home page intranet

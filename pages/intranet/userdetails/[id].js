@@ -2,8 +2,7 @@ import { useRouter } from 'next/router';
 
 import { FormControl, FormGroup, InputLabel, Input, Typography, Button, styled, FormHelperText, Autocomplete, TextField, CircularProgress } from "@mui/material";
 import React, {useState, useEffect } from "react";
-import loadDatabase from '../../../lib/databasesqlite';
-const localforage = require("localforage");
+import getConnection from '../../../lib/dbsqlazure';
 
 import DynamicBreadCrumbs from '../../../components/DynamicBreadCrumbs';
 
@@ -64,107 +63,6 @@ const UserDetails = () => {
     } = useForm({
         defaultValues: formValues
     });
-
-    useEffect(() => {
-        if (id) {
-            // Perform some action with the id
-            console.log('ID from query:', id);
-        }
-
-        const initializeDatabase = async (idUser) => {
-            
-            try {
-                setIsDataReady(false);
-                const databasePath = process.env.NEXT_PUBLIC_DATABASE_SQLITE; // || "/default_database.sqlite";
-                console.log('intranet-userdetails.js - databasePath: ' + databasePath);
-                const database = await loadDatabase(databasePath);
-                setDb(database);
-                console.log('database: ' + database);
-                // debugger;
-
-                if(database){
-                    const query = 'SELECT Id, TipoUtente, Descrizione FROM T_TipoUtente';
-                    console.log('query: ' + query);
-                    const result = database.exec(query);
-                    // debugger;
-                    const rows = result[0]?.values || [];
-
-                    const transformedArray = rows.map(item => ({
-                        value: item[0],
-                        TipoUtente: item[1]
-                    }));
-                      
-                    console.log(transformedArray);
-
-                    setListTipoUtente(transformedArray);
-                    
-                    setIsDataReady(true);
-                    setLoading(false); // Data is loaded
-                }
-
-                if(database){
-                    // const query = `SELECT Id,Nome,Cognome,Email,DataDiNascita,Phone,IdTipoUtente FROM T_Utente WHERE Id=${idUser}`;
-                    const query = `SELECT ut.[Id],ut.[Nome],ut.[Cognome],ut.[Email],ut.[DataDiNascita],ut.[Phone],ut.[IdTipoUtente],tu.TipoUtente FROM T_Utente AS ut INNER JOIN T_TipoUtente AS tu ON tu.Id = ut.IdTipoUtente WHERE ut.[Id]=${idUser}`;
-                    
-                    console.log('query: ' + query);
-                    const result = database.exec(query);
-                    // debugger;
-                    const rows = result[0]?.values || [];
-                    // setData(rows.map(([id, nome, cognome, email,datadinascita,phone,idtipoutente]) => ({ id, nome, cognome, email, datadinascita, phone, idtipoutente })));
-                    
-                    // Update formValues with the API response
-                    // setFormValues(rows.map(([id, nome, cognome, email,datadinascita,phone,idtipoutente]) => ({ id, nome, cognome, email, datadinascita, phone, idtipoutente })));
-                    
-                    // Set values in the form
-                    setValue('nome', rows[0][1]);
-                    setValue('cognome', rows[0][2]);
-                    setValue('email', rows[0][3]);
-
-                    if(rows[0][4] === null){
-                        setValue('datadinascita','2024-01-01');
-                    } else {
-                        setValue('datadinascita', new Date(rows[0][4])); // Convert to Date object
-                        // setValue('datadinascita', rows[0][4]);
-                    }
-
-                    debugger;
-                    if(rows[0][5] === null){
-                        setValue('phone','');
-                    } else {
-                        setValue('phone', rows[0][5]);
-                    }
-                    
-                    setValue('idtipoutente', rows[0][6]);
-
-                    const transformedSelectedValue = {
-                        value: rows[0][6],
-                        TipoUtente: rows[0][7]
-                    };
-                
-                    // Set the default value for 'tipoutente'
-                    setValue('tipoutente', transformedSelectedValue);
-
-                    /* Object.entries(rows).forEach(([key, value]) => {
-                        setValue(key, value);
-                    }); */
-
-                    setIsDataReady(true);
-                    setLoading(false); // Data is loaded
-                }
-                
-            } catch (err) {
-                setIsDataReady(false);
-                setError(err.message);
-                console.log('UserDetails - useEffect error: ' + err.message);
-            }
-        };
-
-        if(id !== undefined){
-            initializeDatabase(id);
-        }
-       
-    }, [id, setValue]);
-
 
     // Validation
     const onSubmit = async (data, event) => {
@@ -237,13 +135,6 @@ const UserDetails = () => {
             db.run(query);
             console.log("User updated successfully.");
     
-            // ✅ Save the updated database back to IndexedDB
-            const updatedDb = db.export();
-            const databasePath = process.env.NEXT_PUBLIC_DATABASE_SQLITE; // || "/default_database.sqlite";
-            console.log('UpdateUserData - databasePath: ' + databasePath);
-            await localforage.setItem(databasePath, updatedDb);
-            console.log("Database saved to IndexedDB after update.");
-    
             // Redirect to AllUsers page
             router.push("/intranet/allusers");
             
@@ -284,13 +175,6 @@ const UserDetails = () => {
             // Delete the user
             db.run(`DELETE FROM T_Utente WHERE Id = ${id}`);
             console.log("User deleted successfully.");
-    
-            // ✅ Save the updated database back to IndexedDB
-            const updatedDb = db.export();
-            const databasePath = process.env.NEXT_PUBLIC_DATABASE_SQLITE; // || "/default_database.sqlite";
-            console.log('DeleteUserData - databasePath: ' + databasePath);
-            await localforage.setItem(databasePath, updatedDb);
-            console.log("Database saved to IndexedDB after deletion.");
     
             // Redirect to AllUsers page
             router.push("/intranet/allusers");

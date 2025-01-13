@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import loadDatabase from '../../lib/databasesqlite';
+import getConnection from '../../lib/dbsqlazure';
 
 import NavIntranetMenu from '../../components/NavIntranetMenu';
 import DynamicBreadCrumbs from '../../components/DynamicBreadCrumbs';
@@ -44,75 +44,36 @@ const AllUsers = () => {
          setIsAuthenticated(global?.localStorage?.getItem("isAuthenticated"));
          setUsername(global?.localStorage?.getItem("username"));
 
-        const initializeDatabase = async () => {
-            
+         const getAllUsers = async () => {
             try {
-                const databasePath = process.env.NEXT_PUBLIC_DATABASE_SQLITE; // || "/default_database.sqlite";
-                console.log('intranet\index.js - databasePath: ' + databasePath);
-                const database = await loadDatabase(databasePath);
-                setDb(database);
-
-                if(database){
-                    const query = 'SELECT ut.[Id],ut.[Nome],ut.[Cognome],ut.[Email],ut.[DataDiNascita],ut.[IdTipoUtente],ut.[Phone],tu.TipoUtente FROM T_Utente AS ut INNER JOIN T_TipoUtente AS tu ON tu.Id = ut.IdTipoUtente';
-                    const result = database.exec(query);
-                    const rows = result[0]?.values || [];
-                    setData(rows.map(([id, nome, cognome, email,datadinascita,idtipoutente,phone,tipoutente]) => ({ id, nome, cognome, email, datadinascita, idtipoutente, phone, tipoutente })));
-                    
-                    setIsDataReady(true);
-                }
+                const query = 'SELECT ut.[Id],ut.[Nome],ut.[Cognome],ut.[Email],ut.[DataDiNascita],ut.[IdTipoUtente],ut.[Phone],tu.TipoUtente FROM T_Utente AS ut INNER JOIN T_TipoUtente AS tu ON tu.Id = ut.IdTipoUtente';
+                console.log('getAllUsers - query: ' + query);
+                // const pool = await getConnection();
+                const result = await pool.request().query(query);
+        
+                res.status(200).json(result.recordset);
+                const rows = result[0]?.values || [];
+                setData(rows.map(([id, nome, cognome, email,datadinascita,idtipoutente,phone,tipoutente]) => ({ id, nome, cognome, email, datadinascita, idtipoutente, phone, tipoutente })));
                 
-            } catch (err) {
+                setIsDataReady(true);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                res.status(500).json({ error: 'Internal Server Error' });
                 setIsDataReady(false);
-                setError(err.message);
+                setError(error.message);
             }
-        };
+        
+        }
 
-        initializeDatabase();
+        getAllUsers();
         
     }, []);
 
     if (error) return <div>Error: {error}</div>;
-    if (!db){
-        return <div>Loading database...</div>;
-    } 
-    const fetchUsers = () => {
-        try {
-            if (!db) throw new Error('Database not loaded');
-            const tableExists = db.exec(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='T_Utente'"
-            );
-            if (tableExists.length === 0) throw new Error('Table T_Utente does not exist');
-            // const query = 'SELECT * FROM T_Utente';
-            const query = 'SELECT ut.[Id],ut.[Nome],ut.[Cognome],ut.[Email],ut.[DataDiNascita],ut.[IdTipoUtente],tu.TipoUtente,tu.Phone FROM T_Utente AS ut INNER JOIN T_TipoUtente AS tu ON tu.Id = ut.IdTipoUtente';
-            const result = db.exec(query);
-            const rows = result[0]?.values || [];
-            setData(rows.map(([id, nome, cognome, email,datadinascita,idtipoutente,tipoutente,phone]) => ({ id, nome, cognome, email, datadinascita, idtipoutente, tipoutente, phone })));
-            setIsDataReady(true);
-        } catch (err) {
-            setIsDataReady(false);
-            console.error('Query error:', err);
-            setError(err.message);
-        }
-    };
-
-    /* const addUser = async () => {
-        if (!db) return;
-        // Insert a new user
-        db.run(`
-            INSERT INTO T_Utente (nome, cognome, email)
-            VALUES ('John', 'Doe', 'john.doe@example.com');
-        `);
-        await saveDatabase(); // Save changes to IndexedDB
-        fetchUsers();
-    };
- */
-    /* const saveDatabase = async () => {
-        if (!db) return;
-        const data = db.export(); // Export as Uint8Array
-        await localforage.setItem('IntranetVivasoft.sqlite', data);
-        console.log('Database saved to IndexedDB');
-    }; */
-
+    // if (!db){
+    //     return <div>Loading database...</div>;
+    // } 
+    
     const columns = [
         { field: 'id', headerName: 'ID', width: 50 },
         {
@@ -211,15 +172,6 @@ const AllUsers = () => {
                     height: "100%"
                     }}
                 >
-                    
-                    {!isDataReady && (
-                        <>
-                        <Typography variant="h4">Embedded SQLite with Next.js</Typography>
-                
-                        <br ></br>
-                        <Button className={styles.BtnLoadUsers} variant="contained" onClick={fetchUsers}>Load Users</Button>
-                        </>
-                    )}
                     <Container maxWidth="xs" height="100%" >
                         <CssBaseline />
                         <Box
